@@ -143,100 +143,55 @@ $('start-btn').addEventListener('click',start);$('sample-btn').addEventListener(
 </script>
 </body>
 </html>
+{/* BATTLE FIT LAB メガシンカ0〜3匹対応 */}
+let selectedMegaCount = 3;
+const megaChoices = mons.filter(m => m.tags.includes('mega'));
+const megaSelectHTML = '<option value="0">0匹</option><option value="1">1匹</option><option value="2">2匹</option><option value="3">3匹</option>';
 
-// メガシンカ候補数を0〜3匹から選択する機能
-const megaPool = mons.filter(m => m.tags.includes('mega'));
-let megaCount = 3;
+const megaSetting = document.createElement('div');
+megaSetting.style.cssText = 'margin:16px 0;padding:16px;border-radius:14px;background:#fff;border:1px solid #e6e6ef';
+megaSetting.innerHTML = '<label for="mega-select">メガシンカ採用数（0〜3匹）</label> <select id="mega-select" style="font-size:16px;padding:8px">' + megaSelectHTML + '</select>';
+document.querySelector('.hero-actions').after(megaSetting);
 
-try {
-  const saved = localStorage.getItem('battle-fit-mega-count');
-  if (/^[0-3]$/.test(saved)) megaCount = Number(saved);
-} catch (_) {}
+const megaSelect = megaSetting.querySelector('select');
+megaSelect.value = String(selectedMegaCount);
+megaSelect.addEventListener('change', () => {
+  selectedMegaCount = Number(megaSelect.value);
+});
 
-const megaOptions =
-  '<option value="0">0匹</option>' +
-  '<option value="1">1匹</option>' +
-  '<option value="2">2匹</option>' +
-  '<option value="3">3匹</option>';
-
-const megaSettings = document.createElement('div');
-megaSettings.style.cssText =
-  'margin:18px 0;padding:16px;background:white;border-radius:14px';
-
-megaSettings.innerHTML =
-  '<label>メガシンカ採用数（0〜3匹） ' +
-  '<select id="mega-count" style="padding:10px;font-size:16px">' +
-  megaOptions + '</select></label>';
-
-document.querySelector('.hero-actions').after(megaSettings);
-megaSettings.querySelector('select').value = String(megaCount);
-
-function changeMegaCount(value) {
-  megaCount = Math.max(0, Math.min(3, Number(value)));
-  megaSettings.querySelector('select').value = String(megaCount);
-  try {
-    localStorage.setItem('battle-fit-mega-count', String(megaCount));
-  } catch (_) {}
-}
-
-megaSettings.querySelector('select').addEventListener(
-  'change', e => changeMegaCount(e.target.value)
-);
-
-const oldCalcMega = calc;
-
-calc = function() {
-  const r = oldCalcMega();
-  const originalMegas = r.team.filter(
-    m => m.tags && m.tags.includes('mega')
-  );
-
-  const availableMegas = [...originalMegas, ...megaPool]
-    .filter((m, i, arr) =>
-      arr.findIndex(x => x.id === m.id) === i
-    );
-
-  const selectedMegas = availableMegas.slice(0, megaCount);
-  const normalCandidates = [...r.team, ...mons]
-    .filter(m => !m.tags || !m.tags.includes('mega'));
-
-  const remaining = normalCandidates
-    .filter((m, i, arr) =>
-      arr.findIndex(x => x.id === m.id) === i
-    )
-    .slice(0, 6 - selectedMegas.length);
-
-  r.team = [...selectedMegas, ...remaining];
-
-  r.lead = [...r.lead, ...r.team.map(m => m.id)]
+const originalCalc = calc;
+calc = function () {
+  const result = originalCalc();
+  const megas = [...result.team, ...megaChoices]
+    .filter(m => m.tags.includes('mega'))
+    .filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
+    .slice(0, selectedMegaCount);
+  const normals = [...result.team, ...mons]
+    .filter(m => !m.tags.includes('mega'))
+    .filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
+    .slice(0, 6 - megas.length);
+  result.team = [...megas, ...normals];
+  result.lead = [...result.lead, ...result.team.map(m => m.id)]
     .filter((id, i, arr) =>
       arr.indexOf(id) === i &&
-      r.team.some(m => m.id === id)
+      result.team.some(m => m.id === id)
     )
     .slice(0, 3);
-
-  return r;
+  return result;
 };
 
-const oldRenderMega = renderResults;
-
-renderResults = function() {
-  oldRenderMega();
-
-  const setting = document.createElement('div');
-  setting.style.cssText =
-    'padding:16px;background:white;border-radius:14px;margin:14px 0';
-
-  setting.innerHTML =
-    '<label>メガシンカ採用数：' +
-    '<select id="result-mega-count" style="padding:10px;font-size:16px">' +
-    megaOptions + '</select></label>';
-
-  document.querySelector('#result-content .team-grid').before(setting);
-  setting.querySelector('select').value = String(megaCount);
-
-  setting.querySelector('select').addEventListener('change', e => {
-    changeMegaCount(e.target.value);
+const originalRenderResults = renderResults;
+renderResults = function () {
+  originalRenderResults();
+  const picker = megaSetting.cloneNode(true);
+  picker.querySelector('label').htmlFor = 'mega-result-select';
+  const select = picker.querySelector('select');
+  select.id = 'mega-result-select';
+  select.value = String(selectedMegaCount);
+  select.addEventListener('change', () => {
+    selectedMegaCount = Number(select.value);
+    megaSelect.value = select.value;
     renderResults();
   });
+  document.querySelector('#result-content .result-hero').after(picker);
 };
