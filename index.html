@@ -140,7 +140,7 @@ function resultText(){const r=state.result;return `【BATTLE FIT 適性診断】
 async function copyResult(){const str=resultText();try{await navigator.clipboard.writeText(str);$('copy-result').textContent='コピーしました ✓';}catch(e){const t=document.createElement('textarea');t.value=str;document.body.appendChild(t);t.select();try{document.execCommand('copy');$('copy-result').textContent='コピーしました ✓'}catch(err){window.prompt('結果をコピーしてください',str);}t.remove();}setTimeout(()=>{if($('copy-result'))$('copy-result').textContent='結果をコピー ⧉'},2000);}
 function demo(){const sample={1:'A',2:'D',3:'B',4:'D',5:'A',6:'D',7:'A',8:'C',9:'A',10:'A',11:'ニンフィア',12:'A',13:'A',14:'A',15:'A'};state.answers=sample;state.idx=14;state.fromSample=true;renderResults();}
 $('start-btn').addEventListener('click',start);$('sample-btn').addEventListener('click',demo);$('brand-link').addEventListener('click',e=>{e.preventDefault();showView('home')});$('back-btn').addEventListener('click',()=>{if(state.idx>0){state.idx--;renderQuestion();}});$('next-btn').addEventListener('click',()=>{const q=questions[state.idx];if(!q.favorite&&!state.answers[q.id])return;if(state.idx===questions.length-1){renderResults();return;}state.idx++;renderQuestion();});
-{/* BATTLE FIT LAB メガシンカ0〜3匹対応 */}
+/* BATTLE FIT LAB メガシンカ0〜3匹対応 */
 let selectedMegaCount = 3;
 const megaChoices = mons.filter(m => m.tags.includes('mega'));
 const megaSelectHTML = '<option value="0">0匹</option><option value="1">1匹</option><option value="2">2匹</option><option value="3">3匹</option>';
@@ -192,3 +192,6 @@ renderResults = function () {
   });
   document.querySelector('#result-content .result-hero').after(picker);
 };
+</script>
+</body>
+</html>
