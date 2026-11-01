@@ -113,6 +113,147 @@
     r.unverified=(r.unverified||[]).filter(n=>!canPick.some(m=>m.name===n));
     return r;
   };
+
+  // v5.2: メガニウムは名前が「メガ」で始まる通常のポケモン（メガシンカではない）。
+  const meganium = records.find(m => m.name === 'メガニウム');
+  if (meganium) {
+    meganium.tags = meganium.tags.filter(t => t !== 'mega');
+    meganium.role = '通常ポケモン（育成要確認）';
+  }
+
+  // 確認元：ポケモン徹底攻略・チャンピオンズ「道具の一覧と効果」
+  // https://yakkun.com/ch/item.htm （2026-11確認）。未記載の道具は追加しない。
+  const heldItems = new Set([
+    'きあいのタスキ','こだわりスカーフ','たべのこし','オボンのみ',
+    'ラムのみ','メンタルハーブ','しろいハーブ','かいがらのすず',
+    'ピントレンズ','せんせいのツメ','ひかりのこな','きあいのハチマキ',
+    'おうじゃのしるし','オッカのみ','ソクノのみ','シュカのみ',
+    'ヤチェのみ','リンドのみ','ロゼルのみ','ヨプのみ',
+    'イトケのみ','カシブのみ','ハバンのみ','ナモのみ',
+    'ようせいのハネ','りゅうのキバ','やわらかいすな','しんぴのしずく',
+    'じしゃく','もくたん','きせきのタネ','とけないこおり',
+    'メタルコート','くろいメガネ','のろいのおふだ','ぎんのこな',
+    'かたいいし','くろおび','まがったスプーン','どくバリ',
+    'するどいくちばし','シルクのスカーフ','でんきだま'
+  ]);
+  const stoneByMega = {
+    'メガアブソル':'アブソルナイト', 'メガウツボット':'ウツボットナイト',
+    'メガエアームド':'エアームドナイト', 'メガエルレイド':'エルレイドナイト',
+    'メガエンブオー':'エンブオナイト', 'メガオーダイル':'オーダイルナイト',
+    'メガオニゴーリ':'オニゴーリナイト', 'メガカイリュー':'カイリュナイト',
+    'メガカイロス':'カイロスナイト', 'メガカメックス':'カメックスナイト',
+    'メガガブリアス':'ガブリアスナイト', 'メガガルーラ':'ガルーラナイト',
+    'メガキラフロル':'キラフロルナイト', 'メガギャラドス':'ギャラドスナイト',
+    'メガケケンカニ':'ケケンカニナイト', 'メガゲッコウガ':'ゲッコウガナイト',
+    'メガゲンガー':'ゲンガナイト', 'メガゴルーグ':'ゴルーグナイト',
+    'メガサーナイト':'サーナイトナイト', 'メガサメハダー':'サメハダナイト',
+    'メガジジーロン':'ジジーロナイト', 'メガジュペッタ':'ジュペッタナイト',
+    'メガスコヴィラン':'スコヴィラナイト', 'メガスターミー':'スターミナイト',
+    'メガスピアー':'スピアナイト', 'メガタブンネ':'タブンネナイト',
+    'メガチャーレム':'チャーレムナイト', 'メガチリーン':'チリーンナイト',
+    'メガチルタリス':'チルタリスナイト', 'メガデンリュウ':'デンリュウナイト',
+    'メガドリュウズ':'ドリュウズナイト', 'メガニャオニクス♂':'ニャオニクスナイト',
+    'メガニャオニクス♀':'ニャオニクスナイト', 'メガハガネール':'ハガネールナイト',
+    'メガハッサム':'ハッサムナイト', 'メガバクーダ':'バクーダナイト',
+    'メガバンギラス':'バンギラスナイト', 'メガピクシー':'ピクシナイト',
+    'メガピジョット':'ピジョットナイト', 'メガフーディン':'フーディナイト',
+    'メガフシギバナ':'フシギバナイト', 'メガフラエッテ':'フラエッテナイト',
+    'メガブリガロン':'ブリガロナイト', 'メガプテラ':'プテラナイト',
+    'メガヘラクロス':'ヘラクロスナイト', 'メガヘルガー':'ヘルガナイト',
+    'メガボスゴドラ':'ボスゴドラナイト', 'メガマフォクシー':'マフォクシナイト',
+    'メガミミロップ':'ミミロップナイト', 'メガメガニウム':'メガニウムナイト',
+    'メガヤドラン':'ヤドランナイト', 'メガヤミラミ':'ヤミラミナイト',
+    'メガユキノオー':'ユキノオナイト', 'メガユキメノコ':'ユキメノコナイト',
+    'メガライボルト':'ライボルトナイト', 'メガリザードンX':'リザードナイトX',
+    'メガリザードンY':'リザードナイトY', 'メガルカリオ':'ルカリオナイト',
+    'メガルチャブル':'ルチャブルナイト'
+  };
+  const boosterByType = {
+    'ノーマル':'シルクのスカーフ', 'ほのお':'もくたん',
+    'みず':'しんぴのしずく','でんき':'じしゃく',
+    'くさ':'きせきのタネ','こおり':'とけないこおり',
+    'かくとう':'くろおび','どく':'どくバリ',
+    'じめん':'やわらかいすな','ひこう':'するどいくちばし',
+    'エスパー':'まがったスプーン','むし':'ぎんのこな',
+    'いわ':'かたいいし','ゴースト':'のろいのおふだ',
+    'ドラゴン':'りゅうのキバ','あく':'くろいメガネ',
+    'はがね':'メタルコート','フェアリー':'ようせいのハネ'
+  };
+  // 元データの道具は「おすすめ候補」扱い。チーム全体で新たに割り振る。
+  const originalItems = new Map(records.map(m => [m.id, m.item]));
+  function rankHeldItems(m) {
+    const tag = t => m.tags?.includes(t);
+    const ranked = new Map();
+    const add = (item, score) => {
+      if (heldItems.has(item) && score > (ranked.get(item) ?? -Infinity)) ranked.set(item, score);
+    };
+    const moves = m.moves || [];
+    const hasSetup = moves.some(v => /まい|わるだくみ|めいそう|のろい|てっぺき|ビルドアップ|じこさいせい|はねやすめ|ちょうはつ|おにび|あくび|ステルスロック|アンコール|でんじは|ねむる|まもる|みがわり/.test(v));
+    // 全員が合法な選択肢を持つように汎用候補を追加。
+    [ ['オボンのみ',34], ['ラムのみ',31], ['きあいのタスキ',30],
+      ['たべのこし',29],['ピントレンズ',26],['かいがらのすず',25],
+      ['メンタルハーブ',24],['しろいハーブ',23],['せんせいのツメ',22],
+      ['ひかりのこな',21],['きあいのハチマキ',20],['おうじゃのしるし',19]
+    ].forEach(([item,v]) => add(item,v));
+    if (tag('bulk') || tag('support')) {
+      add('たべのこし',90);add('オボンのみ',83);add('メンタルハーブ',54);
+    }
+    if (tag('pivot')) {add('オボンのみ',91);add('たべのこし',67);}
+    if (tag('speed')) {add('きあいのタスキ',86); if(!hasSetup && moves.length === 4) add('こだわりスカーフ',76);}
+    if (tag('power')) {add('ピントレンズ',59);add('きあいのタスキ',55);}
+    if (hasSetup) {add('ラムのみ',83);add('しろいハーブ',48);}
+    const types = m.type.split('・');
+    types.forEach((type,i) => add(boosterByType[type], (tag('bulk')?57:82) - i * 7));
+    if (m.name === 'ピカチュウ') add('でんきだま',160);
+    if (m.name === 'ニンフィア' && m.ability.includes('フェアリースキン')) add('ようせいのハネ',120);
+    const preferred = originalItems.get(m.id);
+    if (heldItems.has(preferred)) add(preferred,(ranked.get(preferred)??20)+16);
+    return [...ranked].sort((a,b)=>b[1]-a[1]).slice(0,10);
+  }
+  // 最大6匹×候補10件を探索し、重複なしの合計適性点を最大化。
+  // ブラウザ負荷を避けるため、まず候補数を絞って枝刈り。
+  function allocateHeldItems(team) {
+    const normal = team.filter(m => !m.tags?.includes('mega'));
+    const mega = team.filter(m => m.tags?.includes('mega'));
+    // メガストーンは原則として各個体専用。未確認なら名称を捏造せず明記。
+    const occupied = new Set();
+    for (const m of mega) {
+      const stone = stoneByMega[m.name];
+      m.item = stone || `要確認（${m.name}のメガストーン）`;
+      occupied.add(m.item);
+    }
+    const ranked = normal.map(m => rankHeldItems(m));
+    // アイテムの重複回避が最優先。候補不足の場合はさらに汎用道具を追加。
+    const maxRemaining = Array(normal.length + 1).fill(0);
+    for (let i = normal.length-1; i>=0; i--) maxRemaining[i]=maxRemaining[i+1]+(ranked[i][0]?.[1]??0);
+    let bestTotal=-Infinity, bestPick=[];
+    const used = new Set(occupied);
+    const pick=[];
+    function search(i,score){
+      if (i===normal.length){if(score>bestTotal){bestTotal=score;bestPick=[...pick];}return;}
+      if(score+maxRemaining[i]<bestTotal)return;
+      for(const [item,value] of ranked[i]){
+        if(used.has(item))continue;
+        used.add(item);pick[i]=item;
+        search(i+1,score+value);
+        used.delete(item);
+      }
+    }
+    search(0,0);
+    // 実装済み候補から6匹分選べない場合、適正未確認として表示。
+    normal.forEach((m,i)=>{m.item=bestPick[i] || `未設定（${m.name}用・要確認）`;});
+    const items=team.map(m=>m.item);
+    if(new Set(items).size!==items.length)console.warn('BATTLE FIT: アイテム重複を検出',items);
+    return {distinct:new Set(items).size===items.length,verifiedStoneCount:mega.filter(m=>stoneByMega[m.name]).length};
+  }
+  const previousItemCalc = calc;
+  calc = function() {
+    const result = previousItemCalc();
+    allocateHeldItems(result.team);
+    return result;
+  };
+  window.BATTLE_FIT_ITEM_INFO = {version:'5.2',confirmedItemCount:heldItems.size,confirmedStoneCount:Object.keys(stoneByMega).length};
+
   // デバッグ用、アプリの表示には影響しない参照情報。
   window.BATTLE_FIT_ROSTER_INFO={regulation:'M-C',registered:records.length,mega:records.filter(isMega).length,selectable:canPick.length,legacyCandidateDataUsed:false};
 })();
