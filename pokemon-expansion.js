@@ -252,7 +252,34 @@
     allocateHeldItems(result.team);
     return result;
   };
-  window.BATTLE_FIT_ITEM_INFO = {version:'5.2',confirmedItemCount:heldItems.size,confirmedStoneCount:Object.keys(stoneByMega).length};
+  // v5.3: シングルの基本選出3匹にメガシンカ候補は最大1匹だけ採用する。
+  // 6匹の登録パーティ内に0～3匹のメガがいること自体は維持する。
+  const previousLeadCalc = calc;
+  calc = function() {
+    const result = previousLeadCalc();
+    const team = Array.isArray(result.team) ? result.team : [];
+    const byTeamId = new Map(team.map(mon => [mon.id, mon]));
+    const originalLead = Array.isArray(result.lead) ? result.lead : [];
+    // 既存の基本選出の優先順位を保ちつつ、不足分を控えから補う。
+    const candidateIds = [...originalLead, ...team.map(mon => mon.id)];
+    const chosen = [];
+    const used = new Set();
+    let megaCountInLead = 0;
+    for (const id of candidateIds) {
+      const mon = byTeamId.get(id);
+      if (!mon || used.has(id)) continue;
+      // 名前ではなくタグで判定（「メガニウム」を誤判定しない）。
+      const mega = Array.isArray(mon.tags) && mon.tags.includes('mega');
+      if (mega && megaCountInLead >= 1) continue;
+      chosen.push(id);
+      used.add(id);
+      if (mega) megaCountInLead += 1;
+      if (chosen.length === Math.min(3, team.length)) break;
+    }
+    result.lead = chosen;
+    return result;
+  };
+  window.BATTLE_FIT_ITEM_INFO = {version:'5.3',confirmedItemCount:heldItems.size,confirmedStoneCount:Object.keys(stoneByMega).length};
 
   // デバッグ用、アプリの表示には影響しない参照情報。
   window.BATTLE_FIT_ROSTER_INFO={regulation:'M-C',registered:records.length,mega:records.filter(isMega).length,selectable:canPick.length,legacyCandidateDataUsed:false};
